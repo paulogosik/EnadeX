@@ -17,7 +17,7 @@ def consultar_dados(
         supabase_key: str,
         colunas: str = "*",
         filtros: dict = None,
-        limite: int = 1000,
+        limite: int = None,
         dic_tipagem: dict = None
 ) -> DataFrame:
     """
@@ -64,3 +64,7 @@ def consultar_dados(
     except Exception as e:
         print(f"Falha ao realizar a consulta e converter para DataFrame na tabela '{table_name}': {e}")
         raise e
+
+if __name__=="__main__":
+    print(credenciais_banco())
+    pass

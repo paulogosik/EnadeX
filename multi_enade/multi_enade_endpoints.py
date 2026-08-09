@@ -1,18 +1,17 @@
 from util.util_db import consultar_dados, credenciais_banco
-from modelos.modelo_associacao import modelo_associacao
-from modelos.modelo_clusters import modelo_clusters
+from multi_enade.modelos.modelo_associacao import multi_enade_modelo_associacao
+from multi_enade.modelos.modelo_clusters import multi_enade_modelo_clusters
 from fastapi import FastAPI
-import pandas as pd
 
 app = FastAPI()
 
 @app.get('/api/relatorio-cluster')
-def relatorio_cluster():
+def multi_enade_relatorio_cluster():
     """
     Endpoint para obter os dados de clusterização.
     """
     try:
-        df_cluster = modelo_clusters()
+        df_cluster = multi_enade_modelo_clusters()
         # Converte o DataFrame para um formato JSON
         resultado = df_cluster.to_dict(orient='records')
         return resultado
@@ -20,7 +19,7 @@ def relatorio_cluster():
         return {"erro": str(e)}
 
 @app.get('/api/relatorio-associacao')
-def relatorio_associacao():
+def multi_enade_relatorio_associacao():
     """
     Endpoint para obter as regras de associação.
     """
@@ -38,7 +37,7 @@ def relatorio_associacao():
         df_filtrado = df_dados[colunas]
 
         # Gera as regras de associação
-        regras = modelo_associacao(df_filtrado, suporte_minimo=0.05, confianca_minima=0.5)
+        regras = multi_enade_modelo_associacao(df_filtrado, suporte_minimo=0.05, confianca_minima=0.5)
 
         # Converte os frozensets para listas para serem serializáveis em JSON
         regras['antecedents'] = regras['antecedents'].apply(list)

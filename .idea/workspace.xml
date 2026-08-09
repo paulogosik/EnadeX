@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9dfec786-10e8-400f-b075-06f1aefc1286" name="Changes" comment="" />
+    <list default="true" id="9dfec786-10e8-400f-b075-06f1aefc1286" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/api_main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/multi_enade/multi_enade_endpoints.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modelos/modelo_associacao.py" beforeDir="false" afterPath="$PROJECT_DIR$/multi_enade/modelos/modelo_associacao.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/modelos/modelo_clusters.py" beforeDir="false" afterPath="$PROJECT_DIR$/multi_enade/modelos/modelo_clusters.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -23,12 +29,12 @@
     &quot;assignee&quot;: &quot;Cintriano&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/paulogosik/EnadeX.git",
-    "accountId": "cebfc054-c6ea-46b1-866f-fdb60672bfbd"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/paulogosik/EnadeX.git&quot;,
+    &quot;accountId&quot;: &quot;cebfc054-c6ea-46b1-866f-fdb60672bfbd&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
@@ -42,6 +48,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.etl.executor": "Run",
     "Python.extracao.executor": "Run",
+    "Python.modelo_associacao (1).executor": "Run",
     "Python.modelo_associacao.executor": "Run",
     "Python.modelo_clusters.executor": "Run",
     "Python.plot_clusters.executor": "Run",
@@ -61,10 +68,34 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\CintraMan\Documents\Projetos\EnadeX\multi_enade" />
       <recent name="C:\Users\CintraMan\Documents\Projetos\EnadeX" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.plot_clusters">
+  <component name="RunManager" selected="Python.modelo_associacao (1)">
+    <configuration name="modelo_associacao (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="EnadeX" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/multi_enade/modelos" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/multi_enade/modelos/modelo_associacao.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="modelo_associacao" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="EnadeX" />
       <option name="ENV_FILES" value="" />
@@ -134,29 +165,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="refino_arq21" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="EnadeX" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/refinamento_dados" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="RUN_TOOL" value="" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/refinamento_dados/refino_arq21.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="refino_arq3" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="EnadeX" />
       <option name="ENV_FILES" value="" />
@@ -182,11 +190,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.modelo_associacao (1)" />
         <item itemvalue="Python.plot_clusters" />
         <item itemvalue="Python.modelo_associacao" />
         <item itemvalue="Python.modelo_clusters" />
         <item itemvalue="Python.refino_arq3" />
-        <item itemvalue="Python.refino_arq21" />
       </list>
     </recent_temporary>
   </component>

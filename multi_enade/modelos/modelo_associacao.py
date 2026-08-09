@@ -2,8 +2,6 @@ from mlxtend.frequent_patterns import apriori, association_rules
 from util.util_db import consultar_dados, credenciais_banco
 from pandas import DataFrame
 import pandas as pd
-import dotenv
-import os
 import warnings
 
 pd.set_option('display.max_columns', None)  # Mostra todas as colunas
@@ -14,7 +12,7 @@ pd.set_option('display.width', 1000)        # Estica a largura limite da tela
 # Silencia os avisos de descontinuação gerados pela biblioteca do Supabase
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="supabase")
 
-def modelo_associacao(dataf: DataFrame, suporte_minimo: float = 0.1,confianca_minima: float = 0.5) -> pd.DataFrame:
+def preparar_dados_associacao(dataf: DataFrame, suporte_minimo: float = 0.1,confianca_minima: float = 0.5) -> pd.DataFrame:
     """
     Aplica o algoritmo Apriori para extrair regras de associação de variáveis categóricas.
 
@@ -43,11 +41,11 @@ def modelo_associacao(dataf: DataFrame, suporte_minimo: float = 0.1,confianca_mi
     regras = regras.sort_values(by="lift", ascending=False).reset_index(drop=True)
     return regras
 
-def main(tbl_nome, url_conexao, key_conexao):
+def multi_enade_modelo_associacao(tbl_nome, url_conexao, key_conexao):
     dataf_arq4 = consultar_dados(tbl_nome ,url_conexao, key_conexao)
     list_colunas = ["QE_I57", "QE_I30", "QE_I56"]
     dataf_arq4_filtrado = dataf_arq4[list_colunas]
-    regras_gerais = modelo_associacao(dataf_arq4_filtrado, 0.05, 0.5)
+    regras_gerais = preparar_dados_associacao(dataf_arq4_filtrado, 0.05, 0.5)
 
     regras_ordenadas = regras_gerais.sort_values(
         by=["confidence", "lift"],
@@ -59,4 +57,4 @@ def main(tbl_nome, url_conexao, key_conexao):
 
 if __name__ == "__main__":
     dic_credenciais = credenciais_banco()
-    main("tbl_arq4_2021", dic_credenciais["url_banco"], dic_credenciais["key_banco"])
+    multi_enade_modelo_associacao("tbl_arq4_2021", dic_credenciais["url_banco"], dic_credenciais["key_banco"])

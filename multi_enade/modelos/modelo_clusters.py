@@ -1,7 +1,7 @@
+from util.util_db import consultar_dados, credenciais_banco
+from pandas import DataFrame
 import pandas as pd
 import warnings
-from pandas import DataFrame
-from util.util_db import consultar_dados, credenciais_banco
 
 # Configurações de exibição do Pandas para controle total no terminal
 pd.set_option('display.max_columns', None)
@@ -11,7 +11,6 @@ pd.set_option('display.width', 1000)
 
 # Silencia os avisos internos do Supabase
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="supabase")
-
 
 def preparar_dados_cluster_triplo(
         df_arq3: DataFrame,
@@ -62,7 +61,7 @@ def preparar_dados_cluster_triplo(
     return df_cluster_final
 
 
-def modelo_clusters():
+def multi_enade_modelo_clusters():
     dic_credenciais = credenciais_banco()
     url = dic_credenciais["url_banco"]
     key = dic_credenciais["key_banco"]
@@ -76,13 +75,13 @@ def modelo_clusters():
     # Aciona a função que fará a mágica da engenharia de recursos
     df_pronto_para_cluster = preparar_dados_cluster_triplo(dataf_arq3, dataf_arq4, dataf_arq21)
 
-    print("\n✨ Base unificada e perfeitamente estruturada para Clusterização!")
-    print(f"Total de Cursos consolidados: {len(df_pronto_para_cluster)}")
-    print("\n👀 Visão geral das variáveis prontas para o K-Means (ou similar):")
+    print("\n✨ Base unificada e estruturada para Clusterização!")
+    print(f"✨ Total de Cursos consolidados: {len(df_pronto_para_cluster)}")
+    print("\n✨ Visão geral das variáveis prontas para o K-Means (ou similar):")
     print(df_pronto_para_cluster.head())
 
     return df_pronto_para_cluster
 
 
 if __name__ == "__main__":
-    main()
+    multi_enade_modelo_clusters()
