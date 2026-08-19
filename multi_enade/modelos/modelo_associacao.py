@@ -8,10 +8,16 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="supabase"
 
 def preparar_dados_associacao(dataf: DataFrame, suporte_minimo: float = 0.1,
                               confianca_minima: float = 0.5) -> pd.DataFrame:
-    df_limpo = dataf.dropna(how="any")
+
+    list_colunas = ["QE_I57", "QE_I30", "QE_I56"]
+    dataf_arq4_filtrado = dataf[list_colunas]
+
+    df_limpo = dataf_arq4_filtrado.dropna(how="any")
 
     df_binario = pd.get_dummies(df_limpo)
     df_binario = df_binario.astype(bool)
+
+    df_binario.to_csv("dados/dados_associacao_binario.csv", index=False)
 
     itemsets_frequentes = apriori(df_binario, min_support=suporte_minimo, use_colnames=True)
 
@@ -26,10 +32,8 @@ def preparar_dados_associacao(dataf: DataFrame, suporte_minimo: float = 0.1,
 def multi_enade_modelo_associacao(tbl_nome, url_conexao, key_conexao, suporte_minimo: float = 0.1,
                                   confianca_minima: float = 0.5):
     dataf_arq4 = consultar_dados(tbl_nome, url_conexao, key_conexao)
-    list_colunas = ["QE_I57", "QE_I30", "QE_I56"]
-    dataf_arq4_filtrado = dataf_arq4[list_colunas]
 
-    regras_gerais = preparar_dados_associacao(dataf_arq4_filtrado, suporte_minimo, confianca_minima)
+    regras_gerais = preparar_dados_associacao(dataf_arq4, suporte_minimo, confianca_minima)
     regras_ordenadas = regras_gerais.sort_values(
         by=["confidence", "lift"],
         ascending=[False, False]
@@ -43,7 +47,7 @@ def multi_enade_modelo_associacao(tbl_nome, url_conexao, key_conexao, suporte_mi
     regras_formatadas['support'] = (regras_formatadas['support'] * 100).map("{:.2f}%".format)
     regras_formatadas['confidence'] = (regras_formatadas['confidence'] * 100).map("{:.2f}%".format)
     regras_formatadas['lift'] = regras_formatadas['lift'].map("{:.3f}".format)
-    regras_formatadas.to_csv("dados/dados_associacao.csv", index=False)
+    regras_formatadas.to_csv("dados/dados_associacao_resultado.csv", index=False)
 
     print(regras_formatadas)
 
