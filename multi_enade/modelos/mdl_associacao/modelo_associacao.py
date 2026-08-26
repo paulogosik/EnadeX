@@ -1,5 +1,6 @@
 from mlxtend.frequent_patterns import apriori, association_rules
 from util.util_db import consultar_dados, credenciais_banco
+from util.util_general import calcular_tempo
 from pandas import DataFrame
 import pandas as pd
 import warnings
@@ -31,7 +32,7 @@ def preparar_dados_associacao(dataf: DataFrame, suporte_minimo: float = 0.1,
         print(f"Erro na funcao (preparar_dados_associacao): {e}")
         raise e
 
-
+@calcular_tempo
 def multi_enade_modelo_associacao(tbl_nome, url_conexao, key_conexao, suporte_minimo: float = 0.1,
                                   confianca_minima: float = 0.5, print_flag=False):
     try:

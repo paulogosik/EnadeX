@@ -2,6 +2,7 @@ from util.util_db import consultar_dados, credenciais_banco
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
+from util.util_general import calcular_tempo
 from util.util_pandas import show_df
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
@@ -176,11 +177,11 @@ def plotar_grafico_shap(modelo_treinado, df_dados):
     shap.summary_plot(shap_values, X, show=False)
 
     plt.tight_layout()
-    plt.savefig('../grafico_shap_explicabilidade.png', dpi=150, bbox_inches='tight')
+    #plt.savefig('../grafico_shap_explicabilidade.png', dpi=150, bbox_inches='tight')
     print("[INFO] Gráfico SHAP salvo lindamente como: grafico_shap_explicabilidade.png")
     plt.show()
 
-
+@calcular_tempo
 def multi_enade_modelo_regressao(url_conexao, key_conexao, flag_exe_treino=False):
     print("Extraindo dados do Supabase...")
     df_arq3 = consultar_dados("tbl_arq3_2021", url_conexao, key_conexao)
