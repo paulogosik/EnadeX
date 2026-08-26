@@ -10,7 +10,9 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 import warnings
+import joblib
 import shap
+import os
 
 # Silencia os avisos internos do Supabase
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="supabase")
@@ -67,10 +69,11 @@ def preparar_dados_regressao(df_arq3: DataFrame, df_arq4: DataFrame, df_arq21: D
     show_df(df_consolidado) if print_flag else None
     return df_consolidado
 
-def treino_modelo(df_consolidado: DataFrame, fatia_treino: float = 0.2, print_flag=False):
+
+def treinar_e_salvar_modelo(df_consolidado: DataFrame, fatia_treino: float = 0.2,
+                            caminho_modelo: str = 'rf_regressor.joblib'):
     """
-    Focada estritamente em preparar o X e y, dividir os dados,
-    treinar o modelo e gerar a base consolidada com as predições.
+    Prepara os dados, treina o Random Forest e salva (serializa) a IA no disco.
     """
     x = df_consolidado.drop(columns=['CO_CURSO', 'NT_GER', 'QT_ALUNOS'])
     y = df_consolidado['NT_GER']
@@ -88,9 +91,26 @@ def treino_modelo(df_consolidado: DataFrame, fatia_treino: float = 0.2, print_fl
         random_state=42
     )
     rf_model.fit(X_train, y_train, sample_weight=pesos_train)
-    # --- Salvando o arquivo com predições para toda a base ---
+
+    # Cria a pasta caso ela não exista e salva o modelo
+    os.makedirs(os.path.dirname(caminho_modelo), exist_ok=True)
+    joblib.dump(rf_model, caminho_modelo)
+    print(f"[INFO] Inteligência Artificial treinada e salva em: {caminho_modelo}")
+    return rf_model
+
+
+def aplicar_modelo(df_consolidado: DataFrame, caminho_modelo: str = 'modelos/rf_regressor.joblib', print_flag=False):
+    """
+    Carrega o modelo do disco e aplica aos dados para gerar a nova coluna de predições.
+    """
+    # Carrega a IA da memória do disco
+    rf_model = joblib.load(caminho_modelo)
+
+    x = df_consolidado.drop(columns=['CO_CURSO', 'NT_GER', 'QT_ALUNOS'])
+
     df_pos_treino = df_consolidado.copy()
     df_pos_treino['NT_GER_PREVISTA'] = rf_model.predict(x)
+
     show_df(df_pos_treino) if print_flag else None
     return rf_model, df_pos_treino
 
@@ -124,9 +144,8 @@ def plotar_grafico_tradicional(df_plot, titulo_legenda, cores, nome_arquivo='reg
     sns.regplot(data=df_plot, x='dedicacao', y='NT_GER', scatter=False, color='#2b2d42',
                 line_kws={'linewidth': 2.5, 'linestyle': '--'}, ax=ax)
 
-    ax.set_title('Dedicação Individual é o Fator de Maior Impacto na Nota Geral', fontsize=14, fontweight='bold',
-                 pad=15)
-    ax.set_xlabel('Média de Dedicação aos Estudos do Curso (Escala 1 a 5)', fontsize=11, fontweight='semibold',
+
+    ax.set_xlabel('Média de Dedicação aos Estudos do Curso (QE_I23)', fontsize=11, fontweight='semibold',
                   labelpad=12)
     ax.set_ylabel('Nota Geral Média do Curso (NT_GER)', fontsize=11, fontweight='semibold', labelpad=12)
 
@@ -140,7 +159,7 @@ def plotar_grafico_tradicional(df_plot, titulo_legenda, cores, nome_arquivo='reg
     sns.despine()
     plt.tight_layout()
     plt.savefig(nome_arquivo, dpi=150, bbox_inches='tight')
-    print(f"[INFO] Gráfico clássico salvo lindamente como: {nome_arquivo}")
+    print(f"[INFO] Gráfico clássico salvo como: {nome_arquivo}")
     plt.show()
 
 
@@ -153,29 +172,34 @@ def plotar_grafico_shap(modelo_treinado, df_dados):
     shap_values = explainer.shap_values(X)
 
     plt.figure(figsize=(10, 6.5))
-    plt.title('O Que a IA Aprendeu: Peso de Cada Fator na Nota do ENADE (SHAP)', fontsize=14, fontweight='bold', pad=20)
+    plt.title('Peso de Cada Fator na Nota do ENADE (NT_GER)', fontsize=14, fontweight='bold', pad=20)
     shap.summary_plot(shap_values, X, show=False)
 
     plt.tight_layout()
-    plt.savefig('grafico_shap_explicabilidade.png', dpi=150, bbox_inches='tight')
+    plt.savefig('../grafico_shap_explicabilidade.png', dpi=150, bbox_inches='tight')
     print("[INFO] Gráfico SHAP salvo lindamente como: grafico_shap_explicabilidade.png")
     plt.show()
 
 
-def multi_enade_modelo_regressao(url_conexao, key_conexao):
+def multi_enade_modelo_regressao(url_conexao, key_conexao, flag_exe_treino=False):
     print("Extraindo dados do Supabase...")
     df_arq3 = consultar_dados("tbl_arq3_2021", url_conexao, key_conexao)
     df_arq4 = consultar_dados("tbl_arq4_2021", url_conexao, key_conexao)
     df_arq21 = consultar_dados("tbl_arq21_2021", url_conexao, key_conexao)
     df_arq29 = consultar_dados("tbl_arq29_2021", url_conexao, key_conexao)
 
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_do_modelo = os.path.join(diretorio_atual, 'rf_regressor.joblib')
+
     print("Preparando e agregando a base...")
     df_preparado = preparar_dados_regressao(df_arq3, df_arq4, df_arq21, df_arq29)
-    df_preparado.to_csv("dados/dados_regressao_refinados.csv", index=False)
+    df_preparado.to_csv("dados_regressao_refinados.csv", index=False)
+
+    treinar_e_salvar_modelo(df_preparado, 0.2, caminho_do_modelo) if flag_exe_treino else None
 
     print("Iniciando o treinamento dos modelos...\n")
-    modelo_treinado, df_pos_treino = treino_modelo(df_preparado)
-    df_pos_treino.to_csv("dados/dados_regressao_pos_treino.csv", index=False)
+    modelo_treinado, df_pos_treino = aplicar_modelo(df_preparado, caminho_modelo=caminho_do_modelo)
+    df_pos_treino.to_csv("dados_regressao_pos_treino.csv", index=False)
 
     visao = 'cotas'
     df_pronto, titulo, paleta = preparar_dados_plotagem(df_pos_treino, variavel_destaque=visao)

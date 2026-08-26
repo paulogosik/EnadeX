@@ -1,4 +1,4 @@
-from multi_enade.modelos.modelo_clusters import multi_enade_modelo_clusters
+from multi_enade.modelos.mdl_clusters.modelo_clusters import multi_enade_modelo_clusters
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans

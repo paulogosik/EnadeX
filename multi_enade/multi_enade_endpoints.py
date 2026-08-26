@@ -1,6 +1,6 @@
 from util.util_db import consultar_dados, credenciais_banco
-from multi_enade.modelos.modelo_associacao import multi_enade_modelo_associacao
-from multi_enade.modelos.modelo_clusters import multi_enade_modelo_clusters
+from multi_enade.modelos.mdl_associacao.modelo_associacao import multi_enade_modelo_associacao
+from multi_enade.modelos.mdl_clusters.modelo_clusters import multi_enade_modelo_clusters
 from fastapi import FastAPI
 
 app = FastAPI()

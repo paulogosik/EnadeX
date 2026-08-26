@@ -1,6 +1,5 @@
 import numpy as np
-import pandas as pd
-
+import seaborn as sns
 from matplotlib.lines import Line2D
 import shap
 
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     # a sua função 'multi_enade_modelo_regressao' e pegar o modelo treinado.
     # Exemplo simulado de como o fluxo funcionaria:
 
-    from multi_enade.modelos.modelo_regressao import multi_enade_modelo_regressao
+    from multi_enade.modelos.mdl_regressao.modelo_regressao import multi_enade_modelo_regressao
     from util.util_db import credenciais_banco
 
     dic_credenciais = credenciais_banco()

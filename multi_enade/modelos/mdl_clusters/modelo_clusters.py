@@ -1,3 +1,5 @@
+import joblib
+
 from util.util_db import consultar_dados, credenciais_banco
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -8,6 +10,7 @@ from pandas import DataFrame
 import seaborn as sns
 import pandas as pd
 import warnings
+import os
 
 # Silencia os avisos internos do Supabase
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="supabase")
@@ -42,33 +45,70 @@ def preparar_dados_cluster_triplo(df_arq3: DataFrame, df_arq4: DataFrame, df_arq
     return df_cluster_final
 
 
-def treinar_clusters(df_dados: pd.DataFrame, num_clusters: int = 3, print_flag=False) -> pd.DataFrame:
+def treinar_e_salvar_clusters(df_dados: pd.DataFrame, num_clusters: int = 3, diretorio_modelos: str = '.'):
     """
-    Padroniza os dados, aplica o algoritmo K-Means e calcula o perfil de cada grupo.
-    Retorna o DataFrame enriquecido com a classificação (Cluster_ID).
+    Treina o pipeline de clusterização (Scaler, K-Means e PCA) e salva na memória do disco.
     """
     print(f"Iniciando o treinamento do K-Means para {num_clusters} grupos...")
-
     df_matematica = df_dados.drop(columns=['CO_CURSO'])
-    # 2. Padronização (StandardScaler)
+
+    # 1. Treina a Padronização
     scaler = StandardScaler()
     dados_padronizados = scaler.fit_transform(df_matematica)
-    # 3. Treinamento do K-Means
-    kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
-    clusters_encontrados = kmeans.fit_predict(dados_padronizados)
 
-    # 4. Criamos uma cópia segura e adicionamos a nova coluna com os agrupamentos
+    # 2. Treina o K-Means
+    kmeans = KMeans(n_clusters=num_clusters, random_state=42, n_init=10)
+    kmeans.fit(dados_padronizados)
+
+    # 3. Treina o PCA (Redução Dimensional para 2D)
+    pca = PCA(n_components=2, random_state=42)
+    pca.fit(dados_padronizados)
+
+    # Salva todos os motores treinados
+    joblib.dump(scaler, os.path.join(diretorio_modelos, 'scaler_clusters.joblib'))
+    joblib.dump(kmeans, os.path.join(diretorio_modelos, 'kmeans_clusters.joblib'))
+    joblib.dump(pca, os.path.join(diretorio_modelos, 'pca_clusters.joblib'))
+
+    print("[INFO] Modelos (Scaler, KMeans, PCA) treinados e salvos com sucesso.")
+    return scaler, kmeans, pca
+
+
+def aplicar_clusters(df_dados: pd.DataFrame, diretorio_modelos: str = '.', print_flag=False) -> pd.DataFrame:
+    """
+    Carrega os modelos do disco e aplica as transformações e predições nos dados.
+    """
+    print("Aplicando modelos salvos aos dados...")
+
+    # Carrega os motores da memória
+    scaler = joblib.load(os.path.join(diretorio_modelos, 'scaler_clusters.joblib'))
+    kmeans = joblib.load(os.path.join(diretorio_modelos, 'kmeans_clusters.joblib'))
+    pca = joblib.load(os.path.join(diretorio_modelos, 'pca_clusters.joblib'))
+
+    df_matematica = df_dados.drop(columns=['CO_CURSO'])
+
+    # Aplica o Scaler
+    dados_padronizados = scaler.transform(df_matematica)
+
+    # Aplica o K-Means
     df_clusterizado = df_dados.copy()
-    df_clusterizado['Cluster_ID'] = clusters_encontrados
+    df_clusterizado['Cluster_ID'] = kmeans.predict(dados_padronizados)
+
+    # Aplica o PCA e salva as coordenadas 2D direto na tabela
+    dados_2d = pca.transform(dados_padronizados)
+    df_clusterizado['PCA_X'] = dados_2d[:, 0]
+    df_clusterizado['PCA_Y'] = dados_2d[:, 1]
 
     print("\nCalculando o perfil exato de cada grupo pedagógico...")
-    perfil_clusters = df_clusterizado.drop(columns=['CO_CURSO']).groupby('Cluster_ID').mean()
+    perfil_clusters = df_clusterizado.drop(columns=['CO_CURSO', 'PCA_X', 'PCA_Y']).groupby('Cluster_ID').mean()
 
     print("\nPERFIL NUMÉRICO DOS CLUSTERS:")
     print(perfil_clusters.T.round(2))
     print("=" * 60)
+
     show_df(df_clusterizado) if print_flag else None
-    return df_clusterizado
+
+    # Retornamos o dataframe enriquecido e o modelo PCA (para usar a métrica de variância no gráfico)
+    return df_clusterizado, pca
 
 def plotar_grafico_clusters(df_clusterizado: pd.DataFrame):
     """
@@ -116,7 +156,9 @@ def plotar_grafico_clusters(df_clusterizado: pd.DataFrame):
     plt.show()
 
 
-def multi_enade_modelo_clusters() -> DataFrame:
+def multi_enade_modelo_clusters( num_clusters: int, flag_exe_treino=False) -> DataFrame:
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+
     dic_credenciais = credenciais_banco()
     url = dic_credenciais["url_banco"]
     key = dic_credenciais["key_banco"]
@@ -128,14 +170,17 @@ def multi_enade_modelo_clusters() -> DataFrame:
     # 2. Preparação dos dados
     print("Preparando os dados...")
     df_pronto_para_cluster = preparar_dados_cluster_triplo(dataf_arq3, dataf_arq4, dataf_arq21)
-    df_pronto_para_cluster.to_csv("dados/dados_clusters.csv", index=False)
+    caminho_arq_csv1 = os.path.join(diretorio_atual, 'dados_clusters.csv')
+    df_pronto_para_cluster.to_csv(caminho_arq_csv1, index=False)
     # 3. Treinamento dos clusters
-    df_clusterizado = treinar_clusters(df_pronto_para_cluster, 3)
-    df_clusterizado.to_csv("dados/dados_clusters_treinado.csv", index=False)
+    #df_clusterizado = treinar_clusters(df_pronto_para_cluster, 3)
+    treinar_e_salvar_clusters(df_pronto_para_cluster, num_clusters, diretorio_modelos=diretorio_atual) if flag_exe_treino else None
+    df_clusterizado, pca_treinado = aplicar_clusters(df_pronto_para_cluster, diretorio_modelos=diretorio_atual)
+    caminho_arq_csv2 = os.path.join(diretorio_atual, 'dados_clusters_treinado.csv')
+    df_clusterizado.to_csv(caminho_arq_csv2, index=False)
     # 4. Plotagem
     plotar_grafico_clusters(df_clusterizado)
 
 
-
 if __name__ == "__main__":
-    multi_enade_modelo_clusters()
+    multi_enade_modelo_clusters(3)
