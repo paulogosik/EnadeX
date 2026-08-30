@@ -1,6 +1,4 @@
-import joblib
-
-from util.util_db import consultar_dados, credenciais_banco
+from util.util_db import consultar_dados, credenciais_banco, upsert_supabase
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
@@ -10,6 +8,7 @@ from pandas import DataFrame
 import seaborn as sns
 import pandas as pd
 import warnings
+import joblib
 import os
 
 # Silencia os avisos internos do Supabase
@@ -156,17 +155,14 @@ def plotar_grafico_clusters(df_clusterizado: pd.DataFrame):
     plt.show()
 
 
-def multi_enade_modelo_clusters( num_clusters: int, flag_exe_treino=False) -> DataFrame:
+def multi_enade_modelo_clusters( num_clusters: int, url_conexao, key_conexao,  flag_exe_treino=False) -> DataFrame:
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
 
-    dic_credenciais = credenciais_banco()
-    url = dic_credenciais["url_banco"]
-    key = dic_credenciais["key_banco"]
     # 1. Consulta dos dados
     print("Extraindo dados do Supabase...")
-    dataf_arq3 = consultar_dados("tbl_arq3_2021", url, key)
-    dataf_arq4 = consultar_dados("tbl_arq4_2021", url, key)
-    dataf_arq21 = consultar_dados("tbl_arq21_2021", url, key)
+    dataf_arq3 = consultar_dados("tbl_arq3_2021", url_conexao, key_conexao)
+    dataf_arq4 = consultar_dados("tbl_arq4_2021", url_conexao, key_conexao)
+    dataf_arq21 = consultar_dados("tbl_arq21_2021", url_conexao, key_conexao)
     # 2. Preparação dos dados
     print("Preparando os dados...")
     df_pronto_para_cluster = preparar_dados_cluster_triplo(dataf_arq3, dataf_arq4, dataf_arq21)
@@ -178,9 +174,11 @@ def multi_enade_modelo_clusters( num_clusters: int, flag_exe_treino=False) -> Da
     df_clusterizado, pca_treinado = aplicar_clusters(df_pronto_para_cluster, diretorio_modelos=diretorio_atual)
     caminho_arq_csv2 = os.path.join(diretorio_atual, 'dados_clusters_treinado.csv')
     df_clusterizado.to_csv(caminho_arq_csv2, index=False)
+    upsert_supabase(df_clusterizado, "tbl_multi_enade_clusters", url_conexao, key_conexao)
     # 4. Plotagem
     plotar_grafico_clusters(df_clusterizado)
 
 
 if __name__ == "__main__":
-    multi_enade_modelo_clusters(3)
+    dic_credenciais = credenciais_banco()
+    multi_enade_modelo_clusters(3, dic_credenciais["url_banco"], dic_credenciais["key_banco"])

@@ -1,53 +1,49 @@
 from util.util_db import consultar_dados, credenciais_banco
-from multi_enade.modelos.mdl_associacao.modelo_associacao import multi_enade_modelo_associacao
-from multi_enade.modelos.mdl_clusters.modelo_clusters import multi_enade_modelo_clusters
 from fastapi import FastAPI
+import pandas as pd
 
 app = FastAPI()
+
+@app.get('/api/relatorio-regressao')
+def multi_enade_relatorio_regressao():
+    """
+    Endpoint para obter a matriz de dados com as notas previstas pelo Random Forest.
+    """
+    try:
+        dic_credenciais = credenciais_banco()
+        # Lê a tabela do banco onde o script modelo_regressao.py fez o upsert
+        df_regressao = consultar_dados("tbl_multi_enade_regressao", dic_credenciais["url_banco"], dic_credenciais["key_banco"])
+        return df_regressao.to_dict(orient='records')
+    except Exception as e:
+        return {"erro": f"Falha ao consultar regressão: {str(e)}"}
 
 @app.get('/api/relatorio-cluster')
 def multi_enade_relatorio_cluster():
     """
-    Endpoint para obter os dados de clusterização.
+    Endpoint para obter os dados de clusterização e as coordenadas PCA.
     """
     try:
-        df_cluster = multi_enade_modelo_clusters()
-        # Converte o DataFrame para um formato JSON
-        resultado = df_cluster.to_dict(orient='records')
-        return resultado
+        dic_credenciais = credenciais_banco()
+        # Lê a tabela do banco onde o script modelo_clusters.py fez o upsert
+        df_cluster = consultar_dados("tbl_multi_enade_clusters", dic_credenciais["url_banco"], dic_credenciais["key_banco"])
+        return df_cluster.to_dict(orient='records')
     except Exception as e:
-        return {"erro": str(e)}
+        return {"erro": f"Falha ao consultar clusters: {str(e)}"}
 
 @app.get('/api/relatorio-associacao')
 def multi_enade_relatorio_associacao():
     """
-    Endpoint para obter as regras de associação.
+    Endpoint para obter as regras de associação (Apriori).
     """
     try:
         dic_credenciais = credenciais_banco()
-        url = dic_credenciais["url_banco"]
-        key = dic_credenciais["key_banco"]
-
-        # Define a tabela e colunas para o modelo de associação
-        tabela = "tbl_arq4_2021"
-        colunas = ["QE_I57", "QE_I30", "QE_I56"]
-
-        # Busca e prepara os dados
-        df_dados = consultar_dados(tabela, url, key)
-        df_filtrado = df_dados[colunas]
-
-        # Gera as regras de associação
-        regras = multi_enade_modelo_associacao(df_filtrado, suporte_minimo=0.05, confianca_minima=0.5)
-
-        # Converte os frozensets para listas para serem serializáveis em JSON
-        regras['antecedents'] = regras['antecedents'].apply(list)
-        regras['consequents'] = regras['consequents'].apply(list)
-
-        resultado = regras.to_dict(orient='records')
-        return resultado
+        # Lê a tabela do banco que acabamos de configurar com o ID (tbl_multi_enade_associacao)
+        df_regras = consultar_dados("tbl_multi_enade_associacao", dic_credenciais["url_banco"], dic_credenciais["key_banco"])
+        return df_regras.to_dict(orient='records')
     except Exception as e:
-        return {"erro": str(e)}
+        return {"erro": f"Falha ao consultar associação: {str(e)}"}
 
 if __name__ == '__main__':
     import uvicorn
+    # Rodando na porta 8000 para que o Streamlit ou outro frontend consuma facilmente
     uvicorn.run(app, host="0.0.0.0", port=8000)

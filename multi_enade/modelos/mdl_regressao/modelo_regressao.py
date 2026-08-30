@@ -1,5 +1,4 @@
-from util.util_db import consultar_dados, credenciais_banco
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+from util.util_db import consultar_dados, credenciais_banco, upsert_supabase, truncar_tabela_supabase
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from util.util_general import calcular_tempo
@@ -202,10 +201,11 @@ def multi_enade_modelo_regressao(url_conexao, key_conexao, flag_exe_treino=False
     modelo_treinado, df_pos_treino = aplicar_modelo(df_preparado, caminho_modelo=caminho_do_modelo)
     df_pos_treino.to_csv("dados_regressao_pos_treino.csv", index=False)
 
+    upsert_supabase(df_pos_treino, "tbl_multi_enade_regressao", url_conexao, key_conexao)
+
     visao = 'cotas'
     df_pronto, titulo, paleta = preparar_dados_plotagem(df_pos_treino, variavel_destaque=visao)
     plotar_grafico_tradicional(df_pronto, titulo, paleta, nome_arquivo=f'grafico_enade_{visao}.png')
-
     # 2. Renderiza o Gráfico de Explicabilidade (SHAP)
     plotar_grafico_shap(modelo_treinado, df_pos_treino)
 

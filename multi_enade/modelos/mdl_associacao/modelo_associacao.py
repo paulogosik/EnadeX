@@ -1,5 +1,5 @@
 from mlxtend.frequent_patterns import apriori, association_rules
-from util.util_db import consultar_dados, credenciais_banco
+from util.util_db import consultar_dados, credenciais_banco, upsert_supabase
 from util.util_general import calcular_tempo
 from pandas import DataFrame
 import pandas as pd
@@ -53,11 +53,14 @@ def multi_enade_modelo_associacao(tbl_nome, url_conexao, key_conexao, suporte_mi
         regras_formatadas['antecedents'] = regras_formatadas['antecedents'].apply(lambda x: ', '.join(list(x)))
         regras_formatadas['consequents'] = regras_formatadas['consequents'].apply(lambda x: ', '.join(list(x)))
         # Formata como porcentagem e o lift com 3 casas decimais
-        regras_formatadas['support'] = (regras_formatadas['support'] * 100).map("{:.2f}%".format)
-        regras_formatadas['confidence'] = (regras_formatadas['confidence'] * 100).map("{:.2f}%".format)
+        regras_formatadas['support'] = (regras_formatadas['support'] * 100).map("{:.2f}".format)
+        regras_formatadas['confidence'] = (regras_formatadas['confidence'] * 100).map("{:.2f}".format)
         regras_formatadas['lift'] = regras_formatadas['lift'].map("{:.3f}".format)
+
         caminho_arq_csv2 = os.path.join(diretorio_atual, "dados_associacao_resultado.csv")
         regras_formatadas.to_csv(caminho_arq_csv2, index=False)
+
+        upsert_supabase(regras_formatadas,"tbl_multi_enade_associacao", url_conexao, key_conexao)
 
         print(regras_formatadas) if print_flag else None
     except Exception as e:
