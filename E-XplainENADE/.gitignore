@@ -1,0 +1,24 @@
+# Saída em runtime (PDFs gerados pela aplicação/API)
+outputs/*.pdf
+
+# Configuração local do Claude Code e diário/instruções internas —
+# ver docs/E-XplainENADE/ para dados brutos, TCC, atas e demais materiais
+# não essenciais à execução (movidos para lá em 2026-08-30).
+CLAUDE.md
+DEVELOPMENT.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+docs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
