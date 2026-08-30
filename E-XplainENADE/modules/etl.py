@@ -25,34 +25,22 @@ SWAP POINT: quando o ENADE-Time (Lucas) entregar uma base normalizada
 equivalente, é este o módulo a substituir — load_raw() mantém a mesma
 assinatura e o mesmo schema de saída (nível curso).
 
-FONTE DE DADOS (2026-08-29): load_raw() aceita um parâmetro `reader` — uma
-função (nº do arquivo) -> DataFrame bruto. O padrão continua lendo os .txt
-locais (mesmo comportamento de sempre, usado por gerar_dados.py). Para ler do
-Supabase (fonte oficial da API/app.py, ver DEVELOPMENT.md), use
-`load_raw_from_supabase()`, que passa `_read_arq_supabase` como reader. Toda a
-lógica de filtro por CO_GRUPO e agregação por CO_CURSO é a mesma nos dois
-casos — só muda de onde cada um dos 13 arquivos é lido.
+FONTE DE DADOS (2026-08-30): load_raw() lê os 13 arquivos exclusivamente do
+Supabase (tbl_arq1_2021 ... tbl_arq29_2021) via modules.supabase_client. Não
+há mais caminho local/offline — decisão do usuário de depender só do banco
+compartilhado do ecossistema EnadeX (ver DEVELOPMENT.md).
 """
-from pathlib import Path
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 import pandas as pd
 
 from modules.loader import preprocess
 
-# Fallback do caminho local/offline (reader padrão de load_raw()) — os
-# microdados brutos não são essenciais à execução padrão (Supabase) e vivem
-# fora do código, em docs/E-XplainENADE/ (2026-08-30).
-_RAW_DIR = (
-    Path(__file__).parent.parent.parent
-    / "docs" / "E-XplainENADE"
-    / "microdados_Enade_2021_LGPD"
-    / "2.DADOS"
-)
 
 def table_name(n: int) -> str:
     """Nome da tabela no Supabase para o arquivo bruto nº n (ex: 3 -> 'tbl_arq3_2021')."""
     return f"tbl_arq{n}_2021"
+
 
 # Os 13 arquivos do escopo do E-XplainENADE (ver DEVELOPMENT.md, 2026-08-26/27).
 # Cada tupla: (nº do arquivo, colunas brutas a manter, colunas finais após
@@ -74,12 +62,7 @@ _ARQUIVOS_SIMPLES = [
 ]
 
 
-def _read_arq(n: int, raw_dir: Path) -> pd.DataFrame:
-    path = raw_dir / f"microdados2021_arq{n}.txt"
-    return pd.read_csv(path, sep=";", dtype=str, encoding="latin-1")
-
-
-def _read_arq_supabase(n: int) -> pd.DataFrame:
+def _read_arq(n: int) -> pd.DataFrame:
     from modules.supabase_client import fetch_table
     return fetch_table(table_name(n))
 
@@ -90,27 +73,17 @@ def _preprocessar(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load_raw(
-    grupos: Optional[List[int]] = None,
-    raw_dir: Optional[Path] = None,
-    reader: Optional[Callable[[int], pd.DataFrame]] = None,
-) -> pd.DataFrame:
+def load_raw(grupos: Optional[List[int]] = None) -> pd.DataFrame:
     """
-    Lê os 13 arquivos do INEP usados pelo E-XplainENADE, filtra por CO_GRUPO
-    e agrega cada um por CO_CURSO — a única chave de junção válida entre
-    arquivos do INEP (ver docstring do módulo). Retorna um DataFrame em
-    nível de CURSO.
+    Lê os 13 arquivos do INEP usados pelo E-XplainENADE a partir do Supabase,
+    filtra por CO_GRUPO e agrega cada um por CO_CURSO — a única chave de
+    junção válida entre arquivos do INEP (ver docstring do módulo). Retorna
+    um DataFrame em nível de CURSO.
 
     Parameters
     ----------
     grupos : list[int], optional
         Valores de CO_GRUPO a incluir. Padrão: [4004, 4006] (CC + SI).
-    raw_dir : Path, optional
-        Pasta com os arquivos microdados2021_arq*.txt. Padrão: _RAW_DIR.
-        Ignorado se `reader` for fornecido.
-    reader : callable, optional
-        Função (nº do arquivo) -> DataFrame bruto. Padrão: lê os .txt locais
-        em `raw_dir`. Use `load_raw_from_supabase()` para ler do Supabase.
 
     Returns
     -------
@@ -122,11 +95,9 @@ def load_raw(
         QE_ACAO_AFIRM_BIN, QE_TIPO_EM_BIN, QE_FAM_SUPERIOR, QE_HORAS_ESTUDO
         (médias/proporções por curso).
     """
-    raw_dir = Path(raw_dir) if raw_dir is not None else _RAW_DIR
     grupos = grupos or [4004, 4006]
-    _ler = reader if reader is not None else (lambda n: _read_arq(n, raw_dir))
 
-    a1 = _ler(1)
+    a1 = _read_arq(1)
     a1["CO_GRUPO"] = a1["CO_GRUPO"].astype(int)
     cursos_recorte = set(a1.loc[a1["CO_GRUPO"].isin(grupos), "CO_CURSO"])
 
@@ -135,7 +106,7 @@ def load_raw(
 
     # ── arq3 — notas (Y) + peso (QT_ALUNOS = nº de presentes) ────────────────
     df3 = _preprocessar(
-        _restringir(_ler(3))[["CO_CURSO", "NT_GER", "NT_FG", "NT_CE", "TP_PRES"]]
+        _restringir(_read_arq(3))[["CO_CURSO", "NT_GER", "NT_FG", "NT_CE", "TP_PRES"]]
     )
     df3 = df3[df3["TP_PRES"] == 555]
     df3 = df3[df3["NT_GER"].notna() & (df3["NT_GER"] > 0)]
@@ -158,17 +129,9 @@ def load_raw(
 
     # ── Demais arquivos: uma pergunta cada, agregada por média/proporção ─────
     for n, cols_raw, cols_final in _ARQUIVOS_SIMPLES:
-        df = _preprocessar(_restringir(_ler(n))[["CO_CURSO"] + cols_raw])
+        df = _preprocessar(_restringir(_read_arq(n))[["CO_CURSO"] + cols_raw])
         df = df.dropna(subset=cols_final)
         agg = df.groupby("CO_CURSO")[cols_final].mean().reset_index()
         base = base.merge(agg, on="CO_CURSO", how="inner")
 
     return base
-
-
-def load_raw_from_supabase(grupos: Optional[List[int]] = None) -> pd.DataFrame:
-    """
-    Mesma agregação de `load_raw()`, lendo os 13 arquivos das tabelas do
-    Supabase (tbl_arq1_2021 ... tbl_arq29_2021) em vez dos .txt locais.
-    """
-    return load_raw(grupos=grupos, reader=_read_arq_supabase)

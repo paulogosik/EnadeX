@@ -6,25 +6,16 @@ ESTUDANTE e são chamadas por modules/etl.py — uma vez por arquivo bruto,
 antes da agregação por CO_CURSO — para garantir que a agregação use as
 mesmas regras de recodificação em todo o sistema.
 
-get_default_dataset() carrega a base já agregada por curso (gerada por
-gerar_dados.py) — não precisa (e não deve) rodar preprocess() de novo,
-pois a base embutida já está em nível de curso, com nomes amigáveis.
+get_dataset_from_supabase() carrega a base agregada por curso direto do
+Supabase (única fonte de dados do sistema desde 2026-08-30 — ver
+DEVELOPMENT.md) — não precisa (e não deve) rodar preprocess() de novo, pois
+etl.load_raw() já aplica a recodificação por arquivo antes da agregação.
 """
-from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
 
 from config.variable_map import VARIABLE_MAP
-
-# Base local/offline do recorte do TCC (2021 · CC+SI · Brasil inteiro · agregada
-# por curso). Gerada por gerar_dados.py — só usada por get_default_dataset(),
-# o caminho de fallback sem Supabase. Vive fora do código, em
-# docs/E-XplainENADE/dados/ (2026-08-30 — não essencial à execução padrão).
-DATA_FILE = (
-    Path(__file__).parent.parent.parent
-    / "docs" / "E-XplainENADE" / "dados" / "enade_2021_ccsi_cursos.csv.gz"
-)
 
 # Mapeamento letra → inteiro para QE_I01–QE_I26 (A-E/F/G/H conforme a questão)
 _LETTER_TO_INT = {chr(65 + i): i + 1 for i in range(26)}  # A=1 … Z=26
@@ -155,55 +146,7 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_default_dataset(
-    grupos: Optional[List[int]] = None,
-    ies_filter: Optional[List[int]] = None,
-) -> pd.DataFrame:
-    """
-    Carrega a base embutida do recorte do TCC (DATA_FILE) — já agregada por
-    curso por gerar_dados.py/modules.etl.py — e aplica os filtros da
-    interface. É o ponto de entrada usado pelo app.py.
-
-    Diferente das versões anteriores, esta função NÃO chama preprocess():
-    a base embutida já foi recodificada (letra→número, binarizações, dummies
-    de turno) durante a agregação em etl.py, uma vez por arquivo bruto, antes
-    do curso ser calculado. Rodar preprocess() de novo aqui quebraria os
-    dados (ex: tentaria decodificar QE_RENDA, que já é numérica, como letra).
-
-    Parameters
-    ----------
-    grupos : list[int], optional
-        CO_GRUPO a incluir (ex: [4004]). None = todos os cursos do recorte.
-    ies_filter : list[int], optional
-        Valores de TP_CATEGAD_BIN a incluir (0=Pública, 1=Privada).
-        None = todos os tipos de IES.
-
-    Returns
-    -------
-    pd.DataFrame
-        Uma linha por curso, nomes amigáveis, pronta para modelagem.
-
-    Raises
-    ------
-    FileNotFoundError
-        Se a base ainda não foi gerada (rodar: python gerar_dados.py).
-    """
-    if not DATA_FILE.exists():
-        raise FileNotFoundError(
-            f"Base de dados não encontrada: {DATA_FILE}\n"
-            "Gere-a a partir dos microdados brutos com: python gerar_dados.py"
-        )
-    df = pd.read_csv(DATA_FILE, encoding="utf-8", compression="gzip")
-
-    if grupos:
-        df = df[df["CO_GRUPO"].isin(grupos)].reset_index(drop=True)
-    if ies_filter:
-        df = df[df["TP_CATEGAD_BIN"].isin(ies_filter)].reset_index(drop=True)
-
-    return df
-
-
-# Cache em memória (processo local) do resultado de load_raw_from_supabase, por
+# Cache em memória (processo local) do resultado de etl.load_raw(), por
 # `grupos` — evita repetir as 13 consultas paginadas ao Supabase a cada request.
 # Não persiste entre reinícios do processo; ver DEVELOPMENT.md para a pendência
 # em aberto sobre persistir isso no banco versus sempre recomputar.
@@ -217,8 +160,8 @@ def get_dataset_from_supabase(
 ) -> pd.DataFrame:
     """
     Carrega a base agregada por curso a partir do Supabase (tbl_arq1_2021 ...
-    tbl_arq29_2021), com o mesmo recorte/filtros de get_default_dataset(). É o
-    ponto de entrada usado por app.py e por e_xplainenade_rotas.py.
+    tbl_arq29_2021) — única fonte de dados do sistema. É o ponto de entrada
+    usado por app.py e por e_xplainenade_rotas.py.
 
     Parameters
     ----------
@@ -244,7 +187,7 @@ def get_dataset_from_supabase(
 
     chave = tuple(sorted(grupos)) if grupos else None
     if force_refresh or chave not in _supabase_cache:
-        df = etl.load_raw_from_supabase(grupos=grupos)
+        df = etl.load_raw(grupos=grupos)
         if df.empty:
             tabelas = ", ".join(etl.table_name(n) for n in
                                  [1, 2, 3, 5, 6, 10, 11, 14, 16, 21, 23, 27, 29])
