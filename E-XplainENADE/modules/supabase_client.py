@@ -4,7 +4,7 @@ repositório compartilhado, por decisão de independência registrada no
 DEVELOPMENT.md, 2026-08-26 22:01: o E-XplainENADE não deve depender de código de
 outro integrante, só do banco de dados como ponto de integração).
 
-Lê as credenciais do `..env` na raiz do repositório EnadeX (fora desta pasta,
+Lê as credenciais do `.env` na raiz do repositório EnadeX (fora desta pasta,
 padrão combinado pelo grupo — ver docs/EnadeX - Diagrama de pastas.pdf), com
 SUPABASE_URL e SUPABASE_KEY.
 """
@@ -15,7 +15,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
-_ENV_PATH = Path(__file__).resolve().parents[2] / "..env"  # modules/ -> E-XplainENADE/ -> EnadeX/
+_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"  # modules/ -> E-XplainENADE/ -> EnadeX/
 
 _env_loaded = False
 
@@ -27,7 +27,7 @@ def _ensure_env_loaded() -> None:
     if _ENV_PATH.exists():
         load_dotenv(dotenv_path=_ENV_PATH)
     else:
-        load_dotenv()  # fallback: busca ..env a partir do cwd, para outras estruturas de pasta
+        load_dotenv()  # fallback: busca .env a partir do cwd, para outras estruturas de pasta
     _env_loaded = True
 
 
@@ -46,7 +46,7 @@ def _client():
     key = os.getenv("SUPABASE_KEY")
     if not raw_url or not key:
         raise RuntimeError(
-            "SUPABASE_URL/SUPABASE_KEY não encontrados. Verifique o arquivo ..env "
+            "SUPABASE_URL/SUPABASE_KEY não encontrados. Verifique o arquivo .env "
             f"na raiz do repositório EnadeX (esperado em: {_ENV_PATH})."
         )
     url = raw_url if raw_url.startswith("http") else f"https://{raw_url}.supabase.co"
@@ -66,11 +66,14 @@ def fetch_table(
     Normaliza todo valor não-nulo para string, coluna a coluna: o restante do
     pipeline (modules.loader.preprocess) foi escrito para ler os .txt brutos do
     INEP com dtype=str (ex: letras 'A'..'H' do questionário, mapeadas para
-    inteiro via _LETTER_TO_INT). Como as 13 tabelas ainda não têm dados reais
-    no Supabase, não é possível confirmar hoje como o Postgres vai tipar cada
-    coluna quando o usuário subir os arquivos — esta normalização é uma
-    suposição defensiva para que o pipeline se comporte da mesma forma
-    independente disso. Ver DEVELOPMENT.md para o registro dessa decisão.
+    inteiro via _LETTER_TO_INT). As 13 tabelas foram populadas com as colunas
+    tipadas como `text` (decisão registrada no DEVELOPMENT.md, 2026-08-30, ver
+    Supabase/criar_tabelas_faltantes.sql) — a normalização aqui garante que o
+    pipeline se comporte da mesma forma mesmo que isso mude no futuro.
+
+    Chamada por até 13 threads em paralelo (ver modules/etl.py::load_raw()) —
+    cada chamada cria seu próprio client via _client(), sem estado
+    compartilhado entre threads.
     """
     client = _client()
     registros: List[dict] = []
