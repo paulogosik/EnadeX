@@ -4,7 +4,7 @@ repositório compartilhado, por decisão de independência registrada no
 DEVELOPMENT.md, 2026-08-26 22:01: o E-XplainENADE não deve depender de código de
 outro integrante, só do banco de dados como ponto de integração).
 
-Lê as credenciais do `.env` na raiz do repositório EnadeX (fora desta pasta,
+Lê as credenciais do `..env` na raiz do repositório EnadeX (fora desta pasta,
 padrão combinado pelo grupo — ver docs/EnadeX - Diagrama de pastas.pdf), com
 SUPABASE_URL e SUPABASE_KEY.
 """
@@ -15,7 +15,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
-_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"  # modules/ -> E-XplainENADE/ -> EnadeX/
+_ENV_PATH = Path(__file__).resolve().parents[2] / "..env"  # modules/ -> E-XplainENADE/ -> EnadeX/
 
 _env_loaded = False
 
@@ -27,7 +27,7 @@ def _ensure_env_loaded() -> None:
     if _ENV_PATH.exists():
         load_dotenv(dotenv_path=_ENV_PATH)
     else:
-        load_dotenv()  # fallback: busca .env a partir do cwd, para outras estruturas de pasta
+        load_dotenv()  # fallback: busca ..env a partir do cwd, para outras estruturas de pasta
     _env_loaded = True
 
 
@@ -46,7 +46,7 @@ def _client():
     key = os.getenv("SUPABASE_KEY")
     if not raw_url or not key:
         raise RuntimeError(
-            "SUPABASE_URL/SUPABASE_KEY não encontrados. Verifique o arquivo .env "
+            "SUPABASE_URL/SUPABASE_KEY não encontrados. Verifique o arquivo ..env "
             f"na raiz do repositório EnadeX (esperado em: {_ENV_PATH})."
         )
     url = raw_url if raw_url.startswith("http") else f"https://{raw_url}.supabase.co"

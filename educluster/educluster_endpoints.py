@@ -68,7 +68,7 @@ def _traduzir_erro(erro: Exception):
             status_code=503,
             detail=(
                 f"Fonte de dados indisponivel: {erro}. "
-                "Para origem=supabase instale as dependencias e configure util/.env "
+                "Para origem=supabase instale as dependencias e configure util/..env "
                 "(SUPABASE_URL e SUPABASE_KEY). Para origem=local confira a pasta microdados/."
             ),
         )
