@@ -15,7 +15,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import os
 
-_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"  # modules/ -> E-XplainENADE/ -> EnadeX/
+_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"  # modules/ -> e_xplainenade/ -> EnadeX/
 
 _env_loaded = False
 
