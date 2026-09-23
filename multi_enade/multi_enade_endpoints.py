@@ -41,3 +41,15 @@ def multi_enade_relatorio_associacao():
         return df_regras.to_dict(orient="records")
     except Exception as e:
         return {"erro": f"Falha ao consultar associação: {str(e)}"}
+
+@router.get("/relatorio-shap")
+def multi_enade_relatorio_shap():
+    """
+    Endpoint para obter a importância média absoluta (SHAP) de cada feature do modelo.
+    """
+    try:
+        dic_credenciais = credenciais_banco()
+        df_shap = consultar_dados("tbl_multi_enade_shap", dic_credenciais["url_banco"], dic_credenciais["key_banco"])
+        return df_shap.to_dict(orient='records')
+    except Exception as e:
+        return {"erro": f"Falha ao consultar SHAP: {str(e)}"}

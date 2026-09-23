@@ -180,6 +180,29 @@ def plotar_grafico_shap(modelo_treinado, df_dados):
     print("[INFO] Gráfico SHAP salvo lindamente como: grafico_shap_explicabilidade.png")
     plt.show()
 
+def calcular_e_salvar_shap(modelo_treinado, df_dados, url_conexao, key_conexao):
+    """
+    Calcula a importância média absoluta de cada feature via SHAP e persiste
+    no Supabase, para consumo pela API/frontend. Complementa (não substitui)
+    plotar_grafico_shap, que continua gerando o gráfico local.
+    """
+    colunas_ignoradas = ['CO_CURSO', 'NT_GER', 'QT_ALUNOS', 'NT_GER_PREVISTA']
+    X = df_dados.drop(columns=[col for col in colunas_ignoradas if col in df_dados.columns])
+
+    explainer = shap.TreeExplainer(modelo_treinado)
+    shap_values = explainer.shap_values(X)
+
+    importancia_media = np.abs(shap_values).mean(axis=0)
+    df_shap = pd.DataFrame({
+        'feature': X.columns,
+        'importancia_media': importancia_media
+    }).sort_values('importancia_media', ascending=False).reset_index(drop=True)
+
+    df_shap.to_csv('dados_shap_importancia.csv', index=False)
+    upsert_supabase(df_shap, "tbl_multi_enade_shap", url_conexao, key_conexao)
+    print("[INFO] Importância SHAP calculada e salva no Supabase.")
+    return df_shap
+
 @calcular_tempo
 def multi_enade_modelo_regressao(url_conexao, key_conexao, flag_exe_treino=False):
     print("Extraindo dados do Supabase...")
@@ -208,8 +231,9 @@ def multi_enade_modelo_regressao(url_conexao, key_conexao, flag_exe_treino=False
     plotar_grafico_tradicional(df_pronto, titulo, paleta, nome_arquivo=f'grafico_enade_{visao}.png')
     # 2. Renderiza o Gráfico de Explicabilidade (SHAP)
     plotar_grafico_shap(modelo_treinado, df_pos_treino)
+    calcular_e_salvar_shap(modelo_treinado, df_pos_treino, url_conexao, key_conexao)  # ← nova linha
 
-    print("\nPipeline de Regressão finalizado com absoluto sucesso, senhor Dan!")
+    print("\nPipeline de Regressão finalizado!")
 
 
 if __name__ == "__main__":
