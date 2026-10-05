@@ -11,7 +11,7 @@ app.add_middleware(
         # "https://seu-dominio-de-producao.com",
     ],
     allow_credentials=True,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
